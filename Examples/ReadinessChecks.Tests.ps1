@@ -1,7 +1,7 @@
 #Requires -Modules 'Pester'
 
 <#
-PURPOSE: Pester script to validate that a machine meet the prerequisites for a software deployment/upgrade.  
+PURPOSE: Pester script to validate that a machine meets the prerequisites for a software deployment/upgrade.  
     It generates a NUnit-style test result file for each computer and a summary report in HTML format.
     This script is designed to be run remotely (not from the target machine).
 #>
