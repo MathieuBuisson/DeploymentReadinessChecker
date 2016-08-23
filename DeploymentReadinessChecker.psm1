@@ -32,8 +32,8 @@ Function Test-DeploymentReadiness {
     If not specified, the defaut output path is the current directory.
 
 .PARAMETER TestParameters
-    If the test script(s) used to validate the prerequisites take parameters, their names and values can be specified as a hashtable via this parameter.
-    Then, the function will pass these into the Script parameter of Invoke-Pester, when calling the test script(s).
+    If the test script used to validate the prerequisites take parameters, their names and values can be specified as a hashtable via this parameter.
+    Then, the function will pass these into the Script parameter of Invoke-Pester, when calling the validation script.
     To see the format of the hashtable for this parameter, please refer to the examples by running : Get-Help Test-DeploymentReadiness -Examples
 
 .PARAMETER Tag
@@ -50,10 +50,9 @@ Function Test-DeploymentReadiness {
     Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
 
 .EXAMPLE
-    $TestParams = @{Credential = (Get-Credential); DeploymentServerName = $DeploymentServerName; ManagementServerName = $ManagementServerName}
-    Test-DeploymentReadiness -ComputerName 'Server1','Server2' -Credential (Get-Credential) 
-
-
+    $TestParams = @{ DeploymentServerName = $DeploymentServerName; ManagementServerName = $ManagementServerName }
+    Test-DeploymentReadiness -ComputerName 'Server1','Server2' -Credential (Get-Credential) -TestParameters $TestParams
+    
 .NOTES
     Author : Mathieu Buisson
     
