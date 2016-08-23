@@ -17,24 +17,24 @@ build: false
 
 test_script:
   - ps: |
-      Add-AppveyorTest -Name "Pester_ScriptAnalyzerRules" -Outcome Running
-      $ScriptAnalyzerRulesTests = Invoke-Pester -Script ".\CustomPSScriptAnalyzerRules\Tests" -PassThru
-      $FailedCount = $ScriptAnalyzerRulesTests.FailedCount
+      Add-AppveyorTest -Name "UnitTests" -Outcome Running
+      $UnitTestsOutput = Invoke-Pester -Script ".\Tests" -PassThru
+      $FailedCount = $UnitTestsOutput.FailedCount
       If ($FailedCount -gt 0) {
-        Add-AppveyorMessage -Message "$FailedCount.ToString() Pester tests failed.`
+        Add-AppveyorMessage -Message "$FailedCount.ToString() unit test(s) failed.`
         Check the console ouput for details." -Category Error
-        Update-AppveyorTest -Name "Pester_ScriptAnalyzerRules" -Outcome Failed -ErrorMessage "$FailedCount.ToString() Pester tests failed."
+        Update-AppveyorTest -Name "UnitTests" -Outcome Failed -ErrorMessage "$FailedCount.ToString() Pester test(s) failed."
 
         # Failing the build
-        Throw "Build failed because the Pester tests failed"
+        Throw "Build failed because one or more unit test(s) failed"
       }
       Else {
-        Update-AppveyorTest -Name "Pester_ScriptAnalyzerRules" -Outcome Passed
+        Update-AppveyorTest -Name "UnitTests" -Outcome Passed
       }
 
   - ps: |
       Add-AppveyorTest -Name "PsScriptAnalyzer" -Outcome Running
-      $ScriptAnalyzerResults = Invoke-ScriptAnalyzer -Path $pwd -Recurse -Severity Error -ErrorAction SilentlyContinue
+      $ScriptAnalyzerResults = Invoke-ScriptAnalyzer -Path $pwd -Severity Error -ErrorAction SilentlyContinue
       If ($ScriptAnalyzerResults) {
         $ScriptAnalyzerResultString = $ScriptAnalyzerResults | Out-String
         Write-Warning $ScriptAnalyzerResultString
