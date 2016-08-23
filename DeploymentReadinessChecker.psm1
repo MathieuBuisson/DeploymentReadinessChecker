@@ -39,6 +39,16 @@ Function Test-DeploymentReadiness {
     If the test script(s) used to validate the prerequisites take parameters, their names and values can be specified as a hashtable via this parameter.
     Then, the function will pass these into the Script parameter of Invoke-Pester, when calling the test script(s).
     To see the format of the hashtable for this parameter, please refer to the examples by running : Get-Help Test-DeploymentReadiness -Examples
+
+.PARAMETER Tag
+    If the Pester validation script contains Describe blocks with tags, only the tests in Describe blocks with the specified Tag parameter value(s) are run.
+    Wildcard characters and Tag values that include spaces or whitespace characters are not supported.
+
+.PARAMETER ExcludeTag
+    If the Pester validation script contains Describe blocks with tags, tests in Describe blocks with the specified Tag parameter values are omitted.
+    Wildcard characters and Tag values that include spaces or whitespace characters are not supported.
+
+    Just like the ExcludeTag parameter of Invoke-Pester, when you specify multiple ExcludeTag values, this omits tests that have any of the listed tags (it ORs the tags).
     
 .EXAMPLE
     Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
