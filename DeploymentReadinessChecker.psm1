@@ -27,6 +27,9 @@ Function Test-DeploymentReadiness {
 .PARAMETER Credential
     To specify the credentials to connect remotely to the target computers.
 
+    If the validation script has a Credential parameter, the function passes the value of its own
+    Credential parameter to the validation script, via the Script parameter of Invoke-Pester.
+
 .PARAMETER OutputPath
     To specify in which directory the output test results files and the summary report should be located.
     If the directory doesn't exist, it will be created.
@@ -64,10 +67,16 @@ Function Test-DeploymentReadiness {
         [string]$OutputPath = $($pwd.ProviderPath),
 
         [Parameter(Position=3)]
-        [hashtable]$TestParameters #= @{ Credential = $Credential
-                                   #     DeploymentServerName = $DeploymentServerName
+        [hashtable]$TestParameters, #= @{ DeploymentServerName = $DeploymentServerName
                                    #     ManagementServerName = $ManagementServerName
                                    # }
+        [Parameter(Position=4)]
+        [Alias('Tags')]
+        [string[]]$Tag,
+
+        [Parameter(Position=5)]
+        [Alias('ExcludeTags')]
+        [string[]]$ExcludeTag
     )
 
     Begin {
@@ -77,28 +86,71 @@ Function Test-DeploymentReadiness {
         }
 
         # Checking if the validation script has a ComputerName parameter
-        [System.Boolean]$HasComputerNameParameter = $False
-
         $ValidationScriptFile = (Get-ChildItem -Path "$PSScriptRoot\ReadinessValidationScript\" -Recurse -Filter '*.Tests.ps1').FullName
         If ( $ValidationScriptFile.Count -gt 1 ) {
             Throw "Having more than 1 file named *.Tests.ps1 in the 'ReadinessValidationScript' directory is not supported."
         }
+        Write-Verbose "The detected validation script file is : $ValidationScriptFile"
         
         $ScriptInfo = Get-Command $ValidationScriptFile
-        $HasComputerNameParameter = $ScriptInfo.Parameters.Keys -contains 'ComputerName'
+        [System.Boolean]$HasComputerNameParameter = $ScriptInfo.Parameters.Keys -contains 'ComputerName'
+        Write-Verbose "Does the Pester validation script have a ComputerName parameter ? $($HasComputerNameParameter)."
 
+        # Checking if credentials to connect to target computers were specified
+        If ( $PSBoundParameters.ContainsKey('Credential') ) {
+            $CredentialSpecified = $True
+        }
+
+        # Checking if the validation script has a Credential parameter
+        [System.Boolean]$HasCredentialParameter = $ScriptInfo.Parameters.Keys -contains 'Credential'
+        Write-Verbose "Does the Pester validation script have a Credential parameter ? $($HasCredentialParameter)."
+
+        # Setting tag filtering parameters to pass to Invoke-Pester if the Tag or ExcludeTag parameter is specified
+        If ( $PSBoundParameters.ContainsKey('Tag') -or $PSBoundParameters.ContainsKey('ExcludeTag') ) {
+            
+            [hashtable]$TagFilteringParameters = @{}
+            Write-Verbose 'Tag filtering is ON.'
+
+            If ( $PSBoundParameters.ContainsKey('Tag') ) {
+                $TagFilteringParameters.Add('Tag', $Tag)
+            }
+            If ( $PSBoundParameters.ContainsKey('ExcludeTag') ) {
+                $TagFilteringParameters.Add('ExcludeTag', $ExcludeTag)
+            }
+        }
     }
     Process {
+        
+        # If the validation script has a Credential parameter, the function passes the value of
+        # its own Credential parameter to the validation script, via the Script parameter of Invoke-Pester.
+        If ( $CredentialSpecified -and $HasCredentialParameter ) {
 
+            If ( $PSBoundParameters.ContainsKey('TestParameters') ) {
+                If ( $TestParameters.Credential ) {
+                    $TestParameters.Credential = $Credential
+                }
+                Else {
+                    $TestParameters.Add('Credential', $Credential)
+                }
+            }
+            Else {
+                $TestParameters = @{ Credential = $Credential }
+            }
+        }
+        
         Foreach ( $Computer in $ComputerName ) {
             
-            # If the validation script has a ComputerName parameter, the function
-            # passes one computer at a time to its ComputerName parameter, via
-            # the Script parameter of Invoke-Pester
+            # If the validation script has a ComputerName parameter, the function passes one computer at a
+            # time to the validation script's ComputerName parameter, via the Script parameter of Invoke-Pester.
             If ( $HasComputerNameParameter ) {
 
                 If ( $TestParameters ) {
-                    $TestParameters.Add('ComputerName', $Computer)
+                    If ( $TestParameters.ComputerName ) {
+                        $TestParameters.ComputerName = $Computer
+                    }
+                    Else {
+                        $TestParameters.Add('ComputerName', $Computer)
+                    }
                 }
                 Else {
                     $TestParameters = @{ ComputerName = $Computer }
@@ -107,18 +159,28 @@ Function Test-DeploymentReadiness {
 
             # Building the hashtable to pass parameters to the Pester validation script via the Script parameter of Invoke-Pester
             If ( $TestParameters ) {
+                Foreach ( $Key in $TestParameters.Keys ) {
+                    Write-Verbose "Parameter passed to the validation script. Key : $Key, Value : $($TestParameters.$Key)"
+                }
+
                 $ScriptParameters = @{
-                    Path = "$PSScriptRoot\ReadinessValidationScripts\*"
+                    Path = "$PSScriptRoot\ReadinessValidationScript\*"
                     Parameters = $TestParameters
                 }
             }
             Else {
                 $ScriptParameters = @{
-                    Path = "$PSScriptRoot\ReadinessValidationScripts\*"
+                    Path = "$PSScriptRoot\ReadinessValidationScript\*"
                 }
             }
 
-            Invoke-Pester -Script $ScriptParameters -OutputFile "$OutputPath\$Computer.xml" -OutputFormat NUnitXml
+            Write-Verbose "Running Pester validation script against computer : $Computer"
+            If ( $TagFilteringParameters ) {
+                Invoke-Pester -Script $ScriptParameters -OutputFile "$OutputPath\$Computer.xml" -OutputFormat NUnitXml @TagFilteringParameters
+            }
+            Else {
+                Invoke-Pester -Script $ScriptParameters -OutputFile "$OutputPath\$Computer.xml" -OutputFormat NUnitXml
+            }
         }
     }
     End {

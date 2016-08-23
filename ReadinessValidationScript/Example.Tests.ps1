@@ -23,7 +23,7 @@ Param(
 
 $RemoteSession = New-PSSession -ComputerName $ComputerName -Credential $Credential
 
-Describe 'Hardware prerequisites' {
+Describe 'Hardware prerequisites' -Tag 'Hardware' {
     
     It 'Has at least 4096 MB of total RAM' {
 
@@ -32,7 +32,7 @@ Describe 'Hardware prerequisites' {
         Should Not BeLessThan 4096
     }
 }
-Describe 'Networking prerequisites' {
+Describe 'Networking prerequisites' -Tag 'Networking' {
 
     It 'Can ping the Management server by name' {
 
@@ -60,7 +60,7 @@ Describe 'Networking prerequisites' {
         Should Be $True
     }
 }
-Describe 'OS and runtime prerequisites' {
+Describe 'OS and runtime prerequisites' -Tag 'OS' {
 
     It 'Has the Windows Update KB2883200' {
 
