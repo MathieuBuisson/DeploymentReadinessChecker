@@ -11,24 +11,20 @@ Function Test-DeploymentReadiness {
     Validates that one or more computers meet the prerequisites for a software deployment/upgrade.
     The list of computers to check is specified via the ComputerName parameter.
     
-    The deployment or upgrade prerequisites are specified in a Pester-based validation script
-    located in the sub-directory .\ReadinessValidationScript.
-    All the prerequisites tests should be in a single validation script, so there should be only
-    one file named *.Tests.ps1 in the ReadinessValidationScript sub-directory.
+    The deployment or upgrade prerequisites are specified in a Pester-based validation script located in the sub-directory .\ReadinessValidationScript.
+    All the prerequisites tests should be in a single validation script, so there should be only one file named *.Tests.ps1 in the ReadinessValidationScript sub-directory.
 
     It generates a NUnit-style test results file for each computer and a summary report in HTML format.
 
 .PARAMETER ComputerName
     To specify one or more computers against which the prerequisites checks will be performed.
 
-    If the validation script has a ComputerName parameter, the function passes one computer at a time
-    to its ComputerName parameter, via the Script parameter of Invoke-Pester.
+    If the validation script has a ComputerName parameter, the function passes one computer at a time to its ComputerName parameter, via the Script parameter of Invoke-Pester.
 
 .PARAMETER Credential
     To specify the credentials to connect remotely to the target computers.
 
-    If the validation script has a Credential parameter, the function passes the value of its own
-    Credential parameter to the validation script, via the Script parameter of Invoke-Pester.
+    If the validation script has a Credential parameter, the function passes the value of its own Credential parameter to the validation script, via the Script parameter of Invoke-Pester.
 
 .PARAMETER OutputPath
     To specify in which directory the output test results files and the summary report should be located.
