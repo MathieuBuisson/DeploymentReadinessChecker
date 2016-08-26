@@ -189,6 +189,18 @@ Function Test-DeploymentReadiness {
         }
     }
     End {
+        $ReportUnitPath = "$PSScriptRoot\ReportUnit\ReportUnit.exe"
+        $Null = & $ReportUnitPath $OutputPath
+        If ( $LASTEXITCODE -eq 0 ) {
+            Write-Host "`r`nThe deployment readiness report has been successfully created."
+            Write-Host "To view the report, please open the following file : $OutputPath\Index.html"
+
+            # It maybe be useful to output the file containing the overview report to the pipeline, in case the user wants to do something with it.
+            Get-ChildItem -Path (Join-Path -Path $OutputPath -ChildPath 'Index.html')
+        }
+        Else {
+            Write-Error "An error occurred when ReportUnit was generating HTML reports from the Pester test results. To troubleshoot this, try running '$PSScriptRoot\ReportUnit\ReportUnit.exe' manually to see the actual error message."
+        }
     }
 }
 New-Alias -Name 'tdr' -Value 'Test-DeploymentReadiness'

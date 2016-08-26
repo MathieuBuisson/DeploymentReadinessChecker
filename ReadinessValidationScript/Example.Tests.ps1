@@ -101,4 +101,9 @@ Describe 'PowerShell prerequisites' {
         Get-Module -Name 'PackageManagement' -ListAvailable } |
         Should Not BeNullOrEmpty
     }
+    It 'Has Chocolatey in its registered package sources for the provider "Chocolatey"' {
+        Invoke-Command -Session $RemoteSession {
+        Get-PackageSource -Name Chocolatey -ProviderName Chocolatey } |
+        Should Not BeNullOrEmpty
+    }
 }
