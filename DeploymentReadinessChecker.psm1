@@ -11,7 +11,7 @@ Function Test-DeploymentReadiness {
     Validates that one or more computers meet the prerequisites for a software deployment/upgrade.
     The list of computers to check is specified via the ComputerName parameter.
     
-    The deployment or upgrade prerequisites are specified in a Pester-based validation script located in the sub-directory .\ReadinessValidationScript.
+    The deployment or upgrade prerequisites are specified in a Pester-based validation script located in the sub-directory \ReadinessValidationScript.
     All the prerequisites tests should be in a single validation script, so there should be only one file named *.Tests.ps1 in the ReadinessValidationScript sub-directory.
 
     It generates a NUnit-style test results file for each computer and a summary report in HTML format.
@@ -49,9 +49,19 @@ Function Test-DeploymentReadiness {
 .EXAMPLE
     Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
 
+    Validates that all the computers with the name listed in the file Computers_list.txt meet the prerequisites specified in a validation script located in the sub-directory \ReadinessValidationScript.
+
 .EXAMPLE
     $TestParams = @{ DeploymentServerName = $DeploymentServerName; ManagementServerName = $ManagementServerName }
     Test-DeploymentReadiness -ComputerName 'Server1','Server2' -Credential (Get-Credential) -TestParameters $TestParams
+
+    Validates that all the computers with the name listed in the file Computers_list.txt meet the prerequisites specified in a validation script located in the sub-directory \ReadinessValidationScript.
+    It uses a hashtable ($TestParams) to pass parameter names and values to the validation script.
+
+.EXAMPLE
+    'Computer1','Computer2','Computer3' | Test-DeploymentReadiness -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
+    
+    Validates that all the computers specified via pipeline input meet the prerequisites specified in a validation script located in the sub-directory \ReadinessValidationScript.
     
 .NOTES
     Author : Mathieu Buisson
@@ -62,7 +72,7 @@ Function Test-DeploymentReadiness {
 
 [cmdletbinding()]
     param(
-        [Parameter(Mandatory=$True, Position=0)]
+        [Parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
         [string[]]$ComputerName,
 
         [Parameter(Position=1)]
@@ -189,19 +199,26 @@ Function Test-DeploymentReadiness {
         }
     }
     End {
-        $ReportUnitPath = "$PSScriptRoot\ReportUnit\ReportUnit.exe"
-        $Null = & $ReportUnitPath $OutputPath
-        If ( $LASTEXITCODE -eq 0 ) {
-            Write-Host "`r`nThe deployment readiness report has been successfully created."
-            Write-Host "To view the report, please open the following file : $OutputPath\Index.html"
-
-            # It maybe be useful to output the file containing the overview report to the pipeline, in case the user wants to do something with it.
-            Get-ChildItem -Path (Join-Path -Path $OutputPath -ChildPath 'Index.html')
-        }
-        Else {
-            Write-Error "An error occurred when ReportUnit was generating HTML reports from the Pester test results. To troubleshoot this, try running '$PSScriptRoot\ReportUnit\ReportUnit.exe' manually to see the actual error message."
-        }
+        Invoke-ReportUnit -OutputPath $OutputPath
     }
 }
+
+# Wrapper function to call ReportUnit.exe, this is mainly to be able to mock ReportUnit calls
+Function Invoke-ReportUnit ($OutputPath) {
+    
+    $ReportUnitPath = "$PSScriptRoot\ReportUnit\ReportUnit.exe"
+    $Null = & $ReportUnitPath $OutputPath
+    If ( $LASTEXITCODE -eq 0 ) {
+        Write-Host "`r`nThe deployment readiness report has been successfully created."
+        Write-Host "To view the report, please open the following file : $OutputPath\Index.html"
+
+        # It maybe be useful to output the file containing the overview report to the pipeline, in case the user wants to do something with it.
+        Get-ChildItem -Path (Join-Path -Path $OutputPath -ChildPath 'Index.html')
+    }
+    Else {
+        Write-Error "An error occurred when ReportUnit was generating HTML reports from the Pester test results. To troubleshoot this, try running '$PSScriptRoot\ReportUnit\ReportUnit.exe' manually to see the actual error message."
+    }
+}
+
 New-Alias -Name 'tdr' -Value 'Test-DeploymentReadiness'
 Export-ModuleMember -Function 'Test-DeploymentReadiness' -Alias 'tdr'

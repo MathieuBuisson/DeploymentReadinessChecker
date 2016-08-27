@@ -1,5 +1,6 @@
 Import-Module "$($PSScriptRoot)\..\..\DeploymentReadinessChecker.psd1" -Force
 $ModuleName = 'DeploymentReadinessChecker'
+$OutputPath = 'TestDrive:\OutputFolder'
 
 Describe 'General Module behaviour' {
        
@@ -22,20 +23,27 @@ Describe 'General Module behaviour' {
     }
 }
 Describe 'Test-DeploymentReadiness' {
-
+    
     Context 'Parameters behaviour' {
         
         Mock -ModuleName $ModuleName Invoke-Pester { }
+        Mock -ModuleName $ModuleName Get-ChildItem { } -ParameterFilter {$Path -eq "$OutputPath\Index.html"}
+        Mock -ModuleName $ModuleName Invoke-ReportUnit { }
 
         It "If the directory specified via the parameter 'OutputPath' doesn't exist, it should create it" {
             
-            Test-DeploymentReadiness -ComputerName Localhost -OutputPath 'TestDrive:\OutputFolder'
-            Test-Path -Path 'TestDrive:\OutputFolder' -PathType Container |
+            Test-DeploymentReadiness -ComputerName Localhost -OutputPath $OutputPath
+            Test-Path -Path $OutputPath -PathType Container |
             Should Be $True
         }
         It 'Should call Invoke-Pester once per Computer specified via the ComputerName parameter' {
             
-            Test-DeploymentReadiness -ComputerName 'Server1','Server2','Server3' -OutputPath 'TestDrive:\OutputFolder'
+            Test-DeploymentReadiness -ComputerName 'Server1','Server2','Server3' -OutputPath $OutputPath
+            Assert-MockCalled Invoke-Pester -Exactly 3 -Scope It -ModuleName $ModuleName
+        }
+        It 'Should call Invoke-Pester once per Computer specified via pipeline input' {
+            
+            '1','2','3' | Test-DeploymentReadiness -OutputPath $OutputPath
             Assert-MockCalled Invoke-Pester -Exactly 3 -Scope It -ModuleName $ModuleName
         }
         It 'If the Credential parameter is specified, it should add it into the Script parameter of Invoke-Pester' {
@@ -43,7 +51,7 @@ Describe 'Test-DeploymentReadiness' {
             $Password = ConvertTo-SecureString 'TestPasswd' -AsPlainText -Force
             $TestCred = New-Object System.Management.Automation.PSCredential ('TestUser', $Password)
 
-            Test-DeploymentReadiness -ComputerName 'Server1','Server2' -OutputPath 'TestDrive:\OutputFolder' -Credential $TestCred
+            Test-DeploymentReadiness -ComputerName 'Server1','Server2' -OutputPath $OutputPath -Credential $TestCred
             Assert-MockCalled Invoke-Pester -Scope It -ModuleName $ModuleName -ParameterFilter {
             $Script.Parameters.Credential -eq $TestCred
             }
@@ -78,6 +86,40 @@ Describe 'Test-DeploymentReadiness' {
                 Assert-MockCalled Invoke-Pester -Scope It -ModuleName $ModuleName -ParameterFilter {
                     $ExcludeTag -contains $TestExcludeTag
                 }
+            }
+        }
+    }
+    Context 'General Function behaviour' {
+        
+        Mock -ModuleName $ModuleName Invoke-Pester { }
+        Mock -ModuleName $ModuleName Get-ChildItem { } -ParameterFilter {$Path -eq "$OutputPath\Index.html"}
+        Mock -ModuleName $ModuleName Invoke-ReportUnit { }
+
+        It 'Should call ReportUnit only once, even when there are multiple computers' {
+            
+            Test-DeploymentReadiness -ComputerName 'Server1','Server2','Server3' -OutputPath $OutputPath
+            Assert-MockCalled Invoke-ReportUnit -Exactly 1 -Scope It -ModuleName $ModuleName
+        }
+        It 'Should call ReportUnit only once, even with multiple computers specified via pipeline input' {
+            
+            '1','2','3' | Test-DeploymentReadiness -OutputPath $OutputPath
+            Assert-MockCalled Invoke-ReportUnit -Exactly 1 -Scope It -ModuleName $ModuleName
+        }
+    }
+}
+Describe 'Invoke-ReportUnit' {
+    
+    InModuleScope $ModuleName {
+
+        Mock Invoke-Pester { }
+        Mock Get-ChildItem { } -ParameterFilter {$Path -eq "$OutputPath\Index.html"}
+        Mock Write-Host { }
+
+        It 'Should call Get-ChildItem on "$OutputPath\Index.html"' {
+            
+            Invoke-ReportUnit -OutputPath $OutputPath
+            Assert-MockCalled Get-ChildItem -Scope It -ParameterFilter {
+                $Path -eq "$OutputPath\Index.html"
             }
         }
     }
