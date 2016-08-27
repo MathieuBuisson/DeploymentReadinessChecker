@@ -17,9 +17,9 @@ test_script:
       $UnitTestsOutput = Invoke-Pester -Script ".\Tests" -PassThru
       $FailedCount = $UnitTestsOutput.FailedCount
       If ($FailedCount -gt 0) {
-        Add-AppveyorMessage -Message "$FailedCount.ToString() unit test(s) failed.`
+        Add-AppveyorMessage -Message "$($FailedCount) unit test(s) failed.`
         Check the console ouput for details." -Category Error
-        Update-AppveyorTest -Name "UnitTests" -Outcome Failed -ErrorMessage "$FailedCount.ToString() Pester test(s) failed."
+        Update-AppveyorTest -Name "UnitTests" -Outcome Failed -ErrorMessage "$($FailedCount) Pester test(s) failed."
 
         # Failing the build
         Throw "Build failed because one or more unit test(s) failed"
