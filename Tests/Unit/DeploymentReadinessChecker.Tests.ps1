@@ -110,6 +110,8 @@ Describe 'Test-DeploymentReadiness' {
 Describe 'Invoke-ReportUnit' {
     
     InModuleScope $ModuleName {
+        
+        $OutputPath = 'TestDrive:\OutputFolder'
 
         Mock Invoke-Pester { }
         Mock Get-ChildItem { } -ParameterFilter {$Path -eq "$OutputPath\Index.html"}
