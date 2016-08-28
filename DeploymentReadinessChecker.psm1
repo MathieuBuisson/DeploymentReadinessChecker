@@ -9,12 +9,11 @@ Function Test-DeploymentReadiness {
 
 .DESCRIPTION
     Validates that one or more computers meet the prerequisites for a software deployment/upgrade.
+    It generates a NUnit-style test result file for each computer and creates a visual, dynamic HTLM report encompassing data from all the test results.
     The list of computers to check is specified via the ComputerName parameter.
     
     The deployment or upgrade prerequisites are specified in a Pester-based validation script located in the sub-directory \ReadinessValidationScript.
     All the prerequisites tests should be in a single validation script, so there should be only one file named *.Tests.ps1 in the ReadinessValidationScript sub-directory.
-
-    It generates a NUnit-style test results file for each computer and a summary report in HTML format.
 
 .PARAMETER ComputerName
     To specify one or more computers against which the prerequisites checks will be performed.
