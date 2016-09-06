@@ -46,7 +46,7 @@ If not specified, it defaults to $($pwd.ProviderPath) .
 
 
 **TestParameters :** If the test script used to validate the prerequisites take parameters, their names and values can be specified as a hashtable via this parameter.
-Then, the function will pass these into the Script parameter of Invoke-Pester, when calling the validation script.
+Then, the function will pass these into the Script parameter of Invoke-Pester, when calling the validation script.  
 To see the format of the hashtable for this parameter, please refer to the examples by running : Get-Help Test-DeploymentReadiness -Examples  
 
 
@@ -130,6 +130,8 @@ At line:1 char:1
 \+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 \+ CategoryInfo          : InvalidData: (:) [Test-DeploymentReadiness], ParameterBindingValidationException  
 \+ FullyQualifiedErrorId : ParameterArgumentValidationError,Test-DeploymentReadiness  
+
+
 
 
 
