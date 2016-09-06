@@ -13,7 +13,7 @@ Function Test-DeploymentReadiness {
     The list of computers to check is specified via the ComputerName parameter.
     
     The deployment or upgrade prerequisites are specified in a Pester-based validation script located in the sub-directory \ReadinessValidationScript.
-    All the prerequisites tests should be in a single validation script, so there should be only one file named *.Tests.ps1 in the ReadinessValidationScript sub-directory.
+    Test-DeploymentReadiness can only invoke one validation script at a time, even if there are multiple scripts named *.Tests.ps1 in the ReadinessValidationScript sub-directory.
 
 .PARAMETER ComputerName
     To specify one or more computers against which the prerequisites checks will be performed.
@@ -44,6 +44,14 @@ Function Test-DeploymentReadiness {
     Wildcard characters and Tag values that include spaces or whitespace characters are not supported.
 
     Just like the ExcludeTag parameter of Invoke-Pester, when you specify multiple ExcludeTag values, this omits tests that have any of the listed tags (it ORs the tags).
+
+.PARAMETER ValidationScript
+    This is a dynamic parameter which is made available (and mandatory) whenever there is more than one test script in the sub-folder \ReadinessValidationScript\.
+    This is because Test-DeploymentReadiness can only invoke one validation script at a time, so if there is more than one, the user has to specify which one.
+
+    This parameter expects the name (not the full path) of one of the test file present in <ModuleFolder>\ReadinessValidationScript\.
+    If no value is specified when there is more than one validation script available, the error message will tell the user what are the possible values.
+    (See the last example in the Examples section of the help.)
     
 .EXAMPLE
     Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
@@ -61,7 +69,28 @@ Function Test-DeploymentReadiness {
     'Computer1','Computer2','Computer3' | Test-DeploymentReadiness -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
     
     Validates that all the computers specified via pipeline input meet the prerequisites specified in a validation script located in the sub-directory \ReadinessValidationScript.
+
+.EXAMPLE
+    Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential (Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
     
+cmdlet Test-DeploymentReadiness at command pipeline position 1
+Supply values for the following parameters:
+(Type !? for Help.)
+ValidationScript: 
+Test-DeploymentReadiness : Cannot validate argument on parameter 
+'ValidationScript'. The argument "" does not belong to the set 
+"ClientDeployment.Tests.ps1,Example.Tests.ps1" specified by the ValidateSet 
+attribute. Supply an argument that is in the set and then try the command again.
+At line:1 char:1
++ Test-DeploymentReadiness -ComputerName 'Devops-test-dscnuc' -OutputPa ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Test-DeploymentReadiness], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Test-DeploymentReadiness
+
+
+    In this case, there is more than one validation script in the sub-folder \ReadinessValidationScript\, so the user has to specify the name of the validation script via the ValidationScript parameter.
+    Note that the error message provides the set of possible values ("ClientDeployment.Tests.ps1" and "Example.Tests.ps1", here).
+   
 .NOTES
     Author : Mathieu Buisson
     
@@ -81,9 +110,8 @@ Function Test-DeploymentReadiness {
         [string]$OutputPath = $($pwd.ProviderPath),
 
         [Parameter(Position=3)]
-        [hashtable]$TestParameters, #= @{ DeploymentServerName = $DeploymentServerName
-                                   #     ManagementServerName = $ManagementServerName
-                                   # }
+        [hashtable]$TestParameters,
+
         [Parameter(Position=4)]
         [Alias('Tags')]
         [string[]]$Tag,
@@ -92,6 +120,40 @@ Function Test-DeploymentReadiness {
         [Alias('ExcludeTags')]
         [string[]]$ExcludeTag
     )
+    DynamicParam {
+        # The ValidationScript parameter is made available (and mandatory) only there is more than one test script in the sub-folder \ReadinessValidationScript\.
+        If ( (Get-ChildItem -Path "$PSScriptRoot\ReadinessValidationScript\" -Filter '*.Tests.ps1').Count -gt 1 ) {
+            
+            $ParameterName = 'ValidationScript'
+            
+            # Creating a parameter dictionary 
+            $RuntimeParameterDictionary = New-Object -TypeName System.Management.Automation.RuntimeDefinedParameterDictionary
+
+            # Creating an empty collection of parameter attributes
+            $AttributeCollection = New-Object -TypeName System.Collections.ObjectModel.Collection[System.Attribute]
+            
+            # Setting parameter attributes and values
+            $ValidationScriptAttribute = New-Object -TypeName System.Management.Automation.ParameterAttribute
+            $ValidationScriptAttribute.Mandatory = $True
+            $ValidationScriptAttribute.Position = 6
+            $ValidationScriptAttribute.HelpMessage = "There was more than one test script found in $PSScriptRoot\ReadinessValidationScript\. `r`nPlease specify the name of the test script to use. `r`nTip : Use Tab completion to see the possible script names."
+
+            # Adding the parameter attributes to the attributes collection
+            $AttributeCollection.Add($ValidationScriptAttribute)
+
+            # Generating dynamic values for a ValidateSet
+            $SetValues = Get-ChildItem "$PSScriptRoot\ReadinessValidationScript" -Filter '*.Tests.ps1' | Select-Object -ExpandProperty Name
+            $ValidateSetAttribute = New-Object -TypeName System.Management.Automation.ValidateSetAttribute($SetValues)
+
+            # Adding the ValidateSet to the attributes collection
+            $AttributeCollection.Add($ValidateSetAttribute)
+
+            # Creating the dynamic parameter
+            $RuntimeParameter = New-Object -TypeName System.Management.Automation.RuntimeDefinedParameter($ParameterName, [string], $AttributeCollection)
+            $RuntimeParameterDictionary.Add($ParameterName, $RuntimeParameter)
+            return $RuntimeParameterDictionary
+        }
+    }
 
     Begin {
         
@@ -100,11 +162,13 @@ Function Test-DeploymentReadiness {
         }
 
         # Checking if the validation script has a ComputerName parameter
-        $ValidationScriptFile = (Get-ChildItem -Path "$PSScriptRoot\ReadinessValidationScript\" -Recurse -Filter '*.Tests.ps1').FullName
-        If ( $ValidationScriptFile.Count -gt 1 ) {
-            Throw "Having more than 1 file named *.Tests.ps1 in the 'ReadinessValidationScript' directory is not supported."
+        If ( $PSBoundParameters.ContainsKey('ValidationScript') ) {
+            $ValidationScriptFile = Join-Path -Path "$PSScriptRoot\ReadinessValidationScript" -ChildPath $PSBoundParameters.ValidationScript
         }
-        Write-Verbose "The detected validation script file is : $ValidationScriptFile"
+        Else {
+            $ValidationScriptFile = (Get-ChildItem -Path "$PSScriptRoot\ReadinessValidationScript\" -Filter '*.Tests.ps1').FullName
+        }
+        Write-Verbose "The validation script file is : $ValidationScriptFile"
         
         $ScriptInfo = Get-Command $ValidationScriptFile
         [System.Boolean]$HasComputerNameParameter = $ScriptInfo.Parameters.Keys -contains 'ComputerName'
@@ -178,13 +242,13 @@ Function Test-DeploymentReadiness {
                 }
 
                 $ScriptParameters = @{
-                    Path = "$PSScriptRoot\ReadinessValidationScript\*"
+                    Path = $ValidationScriptFile
                     Parameters = $TestParameters
                 }
             }
             Else {
                 $ScriptParameters = @{
-                    Path = "$PSScriptRoot\ReadinessValidationScript\*"
+                    Path = $ValidationScriptFile
                 }
             }
 
@@ -209,7 +273,7 @@ Function Invoke-ReportUnit ($OutputPath) {
     $Null = & $ReportUnitPath $OutputPath
     If ( $LASTEXITCODE -eq 0 ) {
         Write-Host "`r`nThe deployment readiness report has been successfully created."
-        Write-Host "To view the report, please open the following file : $OutputPath\Index.html"
+        Write-Host "To view the report, please open the following file : $(Join-Path -Path $OutputPath -ChildPath 'Index.html')"
 
         # It maybe be useful to output the file containing the overview report to the pipeline, in case the user wants to do something with it.
         Get-ChildItem -Path (Join-Path -Path $OutputPath -ChildPath 'Index.html')
