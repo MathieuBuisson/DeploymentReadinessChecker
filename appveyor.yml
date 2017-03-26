@@ -6,19 +6,27 @@ os: WMF 5
 skip_commits:
   message: /readme*/
 
+environment:
+  CA_Key:
+    secure: 5RSsazuNC6hRPAKulKD6F8TPlNJpX3tTwclQCDhILMS6nHbMTZYhX8hXu1tpPM1+
+
 install:
   - ps: Write-Host "Build version :`  $env:APPVEYOR_BUILD_VERSION"
   - ps: Write-Host "Branch        :`  $env:APPVEYOR_REPO_BRANCH"
   - ps: Install-PackageProvider -Name NuGet -Force
-  - ps: Install-Module -Name Pester -Force
+  - ps: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+  - ps: Install-Module Coveralls -Scope CurrentUser -Force
+  - ps: Import-Module Coveralls
+  - ps: Install-Module -Name Pester -RequiredVersion 3.4.6 -Force
   - ps: Install-Module PsScriptAnalyzer -Force
   
 build: false
 
 test_script:
   - ps: |
-      $UnitTestsOutput = Invoke-Pester -Script ".\Tests" -OutputFile TestsResults.xml -OutputFormat NUnitXml -PassThru
-      (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\TestsResults.xml))
+      $TestsUploadUrl = "https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)"
+      $TestsOutput = Invoke-Pester -Script '.\Tests' -CodeCoverage '.\DeploymentReadinessChecker.psm1' -OutputFile TestResults.xml -PassThru
+      (New-Object 'System.Net.WebClient').UploadFile($TestsUploadUrl, (Resolve-Path .\TestResults.xml))
       $FailedCount = $UnitTestsOutput.FailedCount
       If ($FailedCount -gt 0) {
         Add-AppveyorMessage -Message "$($FailedCount) unit test(s) failed."
@@ -26,6 +34,8 @@ test_script:
         # Failing the build
         Throw "Build failed because $($FailedCount) unit test(s) failed"
       }
+      $Coverage = Format-Coverage -PesterResults $TestsOutput -CoverallsApiToken $ENV:CA_Key -BranchName $ENV:APPVEYOR_REPO_BRANCH
+      Publish-Coverage -Coverage $Coverage
 
   - ps: |
       Add-AppveyorTest -Name "PsScriptAnalyzer" -Outcome Running
