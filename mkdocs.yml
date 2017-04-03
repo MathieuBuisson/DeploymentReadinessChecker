@@ -1,0 +1,7 @@
+site_name: DeploymentReadinessChecker 
+repo_url: https://github.com/MathieuBuisson/DeploymentReadinessChecker
+site_author: Mathieu Buisson
+theme: readthedocs
+copyright: "DeploymentReadinessChecker is licensed under the <a href='https://github.com/MathieuBuisson/DeploymentReadinessChecker/blob/master/LICENSE'>MIT license"
+pages:
+  - Home: index.md
