@@ -5,6 +5,8 @@
 
 Pester-based tool to validate that a (potentially large) number of machines meet the prerequisites for a software deployment/upgrade.  
 It generates a NUnit-style test result file for each target machine and creates a visual, dynamic HTLM report encompassing data from all the test results, for example :  
+
+
 ![Image of HTML Report](https://i0.wp.com/theshellnut.com/wp-content/uploads/2016/08/Overview-Report.png)
 
 
