@@ -1,6 +1,6 @@
 # DeploymentReadinessChecker  
 
-[![Build status](https://ci.appveyor.com/api/projects/status/w6dha583tp0gkiio/branch/master?svg=true)](https://ci.appveyor.com/project/MathieuBuisson/deploymentreadinesschecker/branch/master) [![Coverage Status](https://coveralls.io/repos/github/MathieuBuisson/DeploymentReadinessChecker/badge.svg?branch=master)](https://coveralls.io/github/MathieuBuisson/DeploymentReadinessChecker?branch=master)  
+[![Build status](https://ci.appveyor.com/api/projects/status/w6dha583tp0gkiio/branch/master?svg=true)](https://ci.appveyor.com/project/MathieuBuisson/deploymentreadinesschecker/branch/master) [![Coverage Status](https://coveralls.io/repos/github/MathieuBuisson/DeploymentReadinessChecker/badge.svg?branch=master)](https://coveralls.io/github/MathieuBuisson/DeploymentReadinessChecker?branch=master) [![Documentation Status](https://readthedocs.org/projects/deploymentreadinesschecker/badge/?version=latest)](http://deploymentreadinesschecker.readthedocs.io/en/latest/?badge=latest)  
 
 
 Pester-based tool to validate that a (potentially large) number of machines meet the prerequisites for a software deployment/upgrade.  
@@ -69,76 +69,3 @@ This is because Test-DeploymentReadiness can only invoke one validation script a
 This parameter expects the name (not the full path) of one of the test file present in <ModuleFolder>\ReadinessValidationScript\.  
 If no value is specified when there is more than one validation script available, the error message will tell the user what are the possible values.  
 (See the last example in the Examples section of the help.)
-
-### Examples :
-
-
-
--------------------------- EXAMPLE 1 --------------------------
-
-PS C:\>Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential 
-(Get-Credential) -OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
-
-
-Validates that all the computers with the name listed in the file Computers_list.txt meet the 
-prerequisites specified in a validation script located in the sub-directory \ReadinessValidationScript.
-
-
-
-
--------------------------- EXAMPLE 2 --------------------------
-
-PS C:\>$TestParams = @{ DeploymentServerName = $DeploymentServerName; ManagementServerName = 
-$ManagementServerName }
-
-
-PS C:\>Test-DeploymentReadiness -ComputerName 'Server1','Server2' -Credential (Get-Credential) -TestParameters 
-$TestParams
-
-Validates that all the computers with the name listed in the file Computers_list.txt meet the 
-prerequisites specified in a validation script located in the sub-directory \ReadinessValidationScript.
-It uses a hashtable ($TestParams) to pass parameter names and values to the validation script.
-
-
-
-
--------------------------- EXAMPLE 3 --------------------------
-
-PS C:\>'Computer1','Computer2','Computer3' | Test-DeploymentReadiness -Credential (Get-Credential) 
--OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
-
-
-Validates that all the computers specified via pipeline input meet the prerequisites specified in a 
-validation script located in the sub-directory \ReadinessValidationScript.
-
-
-
--------------------------- EXAMPLE 4 --------------------------
-
-PS C:\>Test-DeploymentReadiness -ComputerName (Get-Content .\Computers_List.txt) -Credential (Get-Credential) 
--OutputPath $env:USERPROFILE\Desktop\DeploymentReadinessReport
-
-
-cmdlet Test-DeploymentReadiness at command pipeline position 1
-Supply values for the following parameters:
-(Type !? for Help.)
-ValidationScript: 
-Test-DeploymentReadiness : Cannot validate argument on parameter 
-'ValidationScript'. The argument "" does not belong to the set 
-"ClientDeployment.Tests.ps1,Example.Tests.ps1" specified by the ValidateSet 
-attribute. Supply an argument that is in the set and then try the command again.
-At line:1 char:1  
-
-\+ Test-DeploymentReadiness -ComputerName 'Devops-test-dscnuc' -OutputPa ...  
-\+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-\+ CategoryInfo          : InvalidData: (:) [Test-DeploymentReadiness], ParameterBindingValidationException  
-\+ FullyQualifiedErrorId : ParameterArgumentValidationError,Test-DeploymentReadiness  
-
-
-
-
-
-In this case, there is more than one validation script in the sub-folder \ReadinessValidationScript\, so the user has 
-to specify the name of the validation script via the ValidationScript parameter.
-Note that the error message provides the set of possible values ("ClientDeployment.Tests.ps1" and "Example.Tests.ps1", 
-here).
