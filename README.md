@@ -14,7 +14,7 @@ This module contains 1 cmdlet : **Test-DeploymentReadiness**.
 It requires PowerShell version 4 (or later).
 
 
-##Test-DeploymentReadiness :
+## Test-DeploymentReadiness :
 
 
 Validates that one or more computers meet the prerequisites for a software deployment/upgrade.
@@ -29,7 +29,7 @@ Test-DeploymentReadiness can only invoke one validation script at a time, even i
 *.Tests.ps1 in the ReadinessValidationScript sub-directory.
 
 
-###Parameters :
+### Parameters :
 
 
 **ComputerName :** To specify one or more computers against which the prerequisites checks will be performed.
@@ -70,7 +70,7 @@ This parameter expects the name (not the full path) of one of the test file pres
 If no value is specified when there is more than one validation script available, the error message will tell the user what are the possible values.  
 (See the last example in the Examples section of the help.)
 
-###Examples :
+### Examples :
 
 
 
