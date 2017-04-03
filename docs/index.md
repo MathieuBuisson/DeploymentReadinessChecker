@@ -1,7 +1,6 @@
 # DeploymentReadinessChecker  
 
-[![Build status](https://ci.appveyor.com/api/projects/status/w6dha583tp0gkiio/branch/master?svg=true)](https://ci.appveyor.com/project/MathieuBuisson/deploymentreadinesschecker/branch/master) [![Coverage Status](https://coveralls.io/repos/github/MathieuBuisson/DeploymentReadinessChecker/badge.svg?branch=master)](https://coveralls.io/github/MathieuBuisson/DeploymentReadinessChecker?branch=master)  
-
+  
 
 Pester-based tool to validate that a (potentially large) number of machines meet the prerequisites for a software deployment/upgrade.  
 It generates a NUnit-style test result file for each target machine and creates a visual, dynamic HTLM report encompassing data from all the test results, for example :  
