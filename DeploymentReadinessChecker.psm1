@@ -218,6 +218,9 @@ At line:1 char:1
         
         Foreach ( $Computer in $ComputerName ) {
             
+            # Cleaning up any leading or trailing space
+            $Computer = $Computer.Trim()
+            
             # If the validation script has a ComputerName parameter, the function passes one computer at a
             # time to the validation script's ComputerName parameter, via the Script parameter of Invoke-Pester.
             If ( $HasComputerNameParameter ) {
